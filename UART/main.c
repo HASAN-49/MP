@@ -17,14 +17,12 @@
 #define BAUDRATE 9600U
 
 void uart1_tx_init(void);
-void uart1_receive(int n, char *str);
+void uart1_send(int n, char* str);
 
 int main(void) {
 	uart1_tx_init();
-	char str[6];
 	while(1) {
-		uart1_receive(6, str);
-		(void)str;
+		uart1_send(6, "CSE-RU");
 	}
 }
 
@@ -35,14 +33,14 @@ void uart1_tx_init() {
 	RCC_AHB1ENR |= (1<<0);
 
 	/*1) STM32f446xx_Reference Page: 187*/
-	/*PA10 to alternate function mode 10 at bit 20 and 21*/
-	GPIOA_MODER &= ~(3 << 20);  // Clear bits 20:21
-	GPIOA_MODER |=  (2 << 20);  // Set to Alternate Function mode (10)
+	/*PA9 to alternate function mode 10 at bit 18 and 19*/
+	GPIOA_MODER &= ~(3 << 18);  // Clear bits 18:19
+	GPIOA_MODER |= (2 << 18);  // Set to Alternate Function mode (10)
 
 	/*1) STM32f446xx_Reference Page: 192*/
 	/*AF7 (0111)*/
-	GPIOA_AFRH &= ~(0xF<<8); //clear bit 8-11
-	GPIOA_AFRH |= (7<<8);
+	GPIOA_AFRH &= ~(0xF<<4); //clear bit 4-7
+	GPIOA_AFRH |= (7<<4);
 
 	/*1) STM32f446xx_Reference Page: 149*/
 	/*Clock of USART1*/
@@ -53,19 +51,21 @@ void uart1_tx_init() {
 	UART1_BRR = (SYSCLK + (BAUDRATE / 2)) / BAUDRATE;
 
 	/*1) STM32f446xx_Reference Page: 839*/
-	/* Enable RE*/
-	UART1_CR1 = (1 << 2);
+	/* Enable TE*/
+	UART1_CR1 = (1<<3); // Directly assigned, intentionally cleared other bits
 
 	/*Enable the UART1*/
 	UART1_CR1 |= (1<<13);
 }
 
-void uart1_receive(int n, char* str) {
+void uart1_send(int n, char* str) {
 	for(int i = 0; i < n; i++) {
+
 		/*1) STM32f446xx_Reference Page: 835*/
-		/* Rx data register is empty*/
-		while(!(UART1_SR & (1<<5))) {}
+		/* Tx data register is empty*/
+		while(!(UART1_SR & (1<<7))) {}
+
 		/*1) STM32f446xx_Reference page: 838*/
-		str[i] = UART1_DR;
+		UART1_DR = *str++;
 	}
 }
